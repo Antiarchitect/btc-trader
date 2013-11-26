@@ -17,7 +17,7 @@ class BtcEObserver
             rescue
                 retry
             end
-            sleep 2
+            sleep Consts::TimeInterval
         end
     end
 

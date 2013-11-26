@@ -1,56 +1,37 @@
+require 'net/http'
 require 'json'
-require_relative 'lib/SocketIO'
+require 'uri'
 require_relative 'ticker'
 require_relative 'log'
 
 class MtGoxObserver
-    class Channel
-        Trade = "dbf1dee9-4f2e-4a08-8cb7-748919a71b21"
-        Ticker = "d5f06780-30a8-4a48-a2f8-7ed181b4a13f"
-        Depth = "24e67e0d-1cad-4cc0-9e7a-f8523ef460fe"
-    end
-
+    class UnsuccessfullResult < StandardError; end
     def self.start
         while true do
             begin
-                client = SocketIO.connect("http://socketio.mtgox.com/mtgox", {reconnect: false} ) do
-                    channels = {
-                        Channel::Trade => true, 
-                        Channel::Ticker => true,
-                        Channel::Depth => true
-                    }
+              data = JSON.parse(get('http://data.mtgox.com/api/2/BTCUSD/money/ticker_fast'))
+              ticker = Ticker.new Ticker::MtGox
+              raise UnsuccessfullResult unless data['result'] == 'success'
+              ticker.buy = data['data']['buy']['value']
+              ticker.sell = data['data']['sell']['value']
+              ticker.last = data['data']['last']['value']
 
-                    before_start do
-                        on_json_message do |message|
-                            message = JSON.parse message
-                            if message.key? "channel_name" and message["channel_name"] == "ticker.BTCUSD" then
-                                ticker = Ticker.new Ticker::MtGox
-                                ticker.last = message["ticker"]["last"]["value"].to_f
-                                ticker.sell = message["ticker"]["buy"]["value"].to_f
-                                ticker.buy = message["ticker"]["sell"]["value"].to_f
+              yield ticker
 
-                                yield ticker
-                            elsif message.key? "op" && message["op"] == "subscribe" then
-                                channels[message["channel"]] = true
-                            elsif message.key? "op" && message["op"] == "unsubscribe" then
-                                channels[message["channel"]] = false
-                            end
-                            if channels[Channel::Trade] then
-                                send_json_message({ op: "unsubscribe", channel: Channel::Trade  })
-                            end
-                            if channels[Channel::Depth] then
-                                send_json_message({ op: "unsubscribe", channel: Channel::Depth })
-                            end
-                        end
-                    end
-                    after_start do
-                        Log.puts 'MtGox: connected ' + send_connect.inspect
-                    end
-                end
+              sleep Consts::TimeInterval
             rescue
-                retry
+              retry
             end
         end
+    end
+
+    private
+    def self.get(url)
+      uri = URI.parse url
+      http = Net::HTTP.new(uri.host, uri.port)
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+      response.body
     end
 
 end
