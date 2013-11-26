@@ -3,6 +3,7 @@ require 'uri'
 require 'json'
 require 'digest/sha2'
 require 'scanf'
+require 'openssl'
 require_relative 'log'
 
 class BtcE
@@ -97,10 +98,10 @@ class BtcE
         uri = URI.parse "https://btc-e.com/tapi"
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
-        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        http.verify_mode = ::OpenSSL::SSL::VERIFY_NONE
 
         data = URI::encode_www_form params.merge( { "method" => method, "nonce" => (@@nonce += 1) } )
-        sign = OpenSSL::HMAC.hexdigest("sha512", @@config.secret, data)
+        sign = ::OpenSSL::HMAC.hexdigest("sha512", @@config.secret, data)
         headers = {
             "Key" => @@config.key,
             "Sign" => sign
