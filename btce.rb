@@ -3,7 +3,6 @@ require 'uri'
 require 'json'
 require 'digest/sha2'
 require 'scanf'
-require 'openssl'
 require_relative 'log'
 
 class BtcE
@@ -65,7 +64,7 @@ class BtcE
     end
 
     def self.sell! amount, price
-        Log.puts "selling %f BTC on BTC-e for price $%f..." % [amount, price]
+        TradeLog.puts "selling %f BTC on BTC-e for price $%f..." % [amount, price]
         res = call_method("Trade", {
             "pair" => "btc_usd",
             "type" => "sell",
@@ -77,7 +76,7 @@ class BtcE
 
 
     def self.buy! amount, price
-        Log.puts "buying %f BTC on BTC-e for price $%f..." % [amount, price]
+        TradeLog.puts "buying %f BTC on BTC-e for price $%f..." % [amount, price]
         res = call_method("Trade", {
             "pair" => "btc_usd",
             "type" => "buy",
@@ -88,7 +87,7 @@ class BtcE
     end
 
     def self.cancel order_id
-        Log.puts "canceling last order on BTC-e..."
+        TradeLog.puts "canceling last order on BTC-e..."
         call_method("CancelOrder", { "order_id" => order_id })["success"] == 1
     end
 
@@ -98,10 +97,10 @@ class BtcE
         uri = URI.parse "https://btc-e.com/tapi"
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
-        http.verify_mode = ::OpenSSL::SSL::VERIFY_NONE
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
         data = URI::encode_www_form params.merge( { "method" => method, "nonce" => (@@nonce += 1) } )
-        sign = ::OpenSSL::HMAC.hexdigest("sha512", @@config.secret, data)
+        sign = OpenSSL::HMAC.hexdigest("sha512", @@config.secret, data)
         headers = {
             "Key" => @@config.key,
             "Sign" => sign
