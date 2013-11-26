@@ -9,9 +9,9 @@ class BtcEObserver
             begin 
                 data = JSON.parse(get("https://btc-e.com/api/2/btc_usd/ticker"))
                 ticker = Ticker.new Ticker::BtcE
-                ticker.buy = data["ticker"]["buy"]
-                ticker.sell = data["ticker"]["sell"]
-                ticker.last = data["ticker"]["last"]
+                ticker.buy = data["ticker"]["buy"].to_f
+                ticker.sell = data["ticker"]["sell"].to_f
+                ticker.last = data["ticker"]["last"].to_f
 
                 yield ticker
             rescue

@@ -12,9 +12,9 @@ class MtGoxObserver
               data = JSON.parse(get('http://data.mtgox.com/api/2/BTCUSD/money/ticker_fast'))
               ticker = Ticker.new Ticker::MtGox
               raise UnsuccessfullResult unless data['result'] == 'success'
-              ticker.buy = data['data']['buy']['value']
-              ticker.sell = data['data']['sell']['value']
-              ticker.last = data['data']['last']['value']
+              ticker.buy = data['data']['buy']['value'].to_f
+              ticker.sell = data['data']['sell']['value'].to_f
+              ticker.last = data['data']['last']['value'].to_f
 
               yield ticker
 
